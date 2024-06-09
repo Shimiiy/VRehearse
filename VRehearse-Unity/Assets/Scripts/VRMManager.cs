@@ -10,25 +10,15 @@ using System.Threading;
 
 public class VRMManager : MonoBehaviour
 {
-    RuntimeGltfInstance gltfInstance;
-
     [SerializeField]
     string path = "D:/Assets/persona-avatar-blender/Shimiiy-VRM.vrm";
 
     private void Start()
     {
-        // LoadModel();
-        LoadModelWithMigration(path);
+        LoadModelWithMigration(path, new VRMShaders.RuntimeOnlyAwaitCaller());
     }
 
-    async void LoadModel()
-    {
-        Debug.Log(path);
-        this.gltfInstance = await VrmUtility.LoadAsync(path, new RuntimeOnlyAwaitCaller());
-        this.gltfInstance.ShowMeshes();
-    }
-
-    async void LoadModelWithMigration(string path)
+    async void LoadModelWithMigration(string path, VRMShaders.IAwaitCaller awaitCaller)
     {
         try
         {
@@ -36,7 +26,11 @@ public class VRMManager : MonoBehaviour
             var vrm10Instance = await Vrm10.LoadPathAsync(path,
                 canLoadVrm0X: true,
                 showMeshes: false,
+                awaitCaller: awaitCaller,
                 materialGenerator: new UrpVrm10MaterialDescriptorGenerator());
+
+            // Setup FirstPerson for VR
+            await vrm10Instance.Vrm.FirstPerson.SetupAsync(vrm10Instance.gameObject, awaitCaller);
 
             var instance = vrm10Instance.GetComponent<RuntimeGltfInstance>();
             instance.ShowMeshes();
